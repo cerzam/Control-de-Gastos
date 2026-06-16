@@ -18,6 +18,11 @@ const register = async (req, res) => {
     return res.status(400).json({ success: false, message: 'Nombre, email y contraseña son requeridos' });
   }
 
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return res.status(400).json({ success: false, message: 'El formato del email no es válido' });
+  }
+
   if (password.length < 6) {
     return res.status(400).json({ success: false, message: 'La contraseña debe tener al menos 6 caracteres' });
   }
