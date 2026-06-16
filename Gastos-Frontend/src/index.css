@@ -1,0 +1,70 @@
+@import "tailwindcss";
+
+@theme {
+  /* Registramos tu paleta exacta de Figma directamente en el motor v4 */
+  --color-background: #0F1419;
+  --color-surface: #1A1F2F;
+  --color-primary: #10B981;
+  --color-secondary: #3B82F6;
+  --color-error: #EF4444;
+  --color-warning: #F59E0B;
+  --color-muted: #374151;
+  --color-foreground: #F5F7FB;
+  
+  --font-sans: 'Inter', system-ui, sans-serif;
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html, body, #root {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  input, textarea {
+    background-color: var(--color-surface);
+    color: var(--color-foreground);
+    outline: none;
+  }
+}
+
+@layer components {
+  /* Tus clases de formulario acopladas al nuevo sistema de diseño */
+  .field {
+    @apply w-full bg-surface border border-muted/40 rounded-xl px-4 py-3
+           text-foreground text-sm placeholder-muted
+           focus:outline-none focus:border-primary transition-colors;
+  }
+
+  .btn-primary {
+    @apply w-full bg-primary text-background font-bold rounded-xl py-3.5
+           text-sm tracking-wide hover:bg-green-400 active:scale-[0.98]
+           transition-all duration-150;
+  }
+
+  .btn-secondary {
+    @apply w-full bg-surface border border-muted/40 text-foreground
+           font-semibold rounded-xl py-3 text-sm flex items-center
+           justify-center gap-2 hover:border-neutral-400 transition-colors;
+  }
+
+  .card {
+    @apply bg-surface border border-muted/20 rounded-2xl;
+  }
+
+  .form-label {
+    @apply block text-foreground text-sm font-semibold mb-1.5;
+  }
+}
