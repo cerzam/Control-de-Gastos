@@ -2,6 +2,7 @@
 import React, { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react'
+import api from '../api/axios'
 
 // SVG logos inline para evitar dependencias externas
 function GoogleIcon() {
@@ -31,22 +32,27 @@ export default function Login() {
   const [loading,  setLoading]  = useState(false)
   const [error,    setError]    = useState('')
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault()
     setError('')
     if (!email || !password) { setError('Completa todos los campos.'); return }
 
     setLoading(true)
-    // Simula autenticación — reemplazar con llamada al API
-    setTimeout(() => {
-      setLoading(false)
-      if (email === 'carlos.mendez@ejemplo.com' && password === '12345678') {
-        localStorage.setItem ('token', 'jwt_mock_carlos_2026')
-        navigate('/home')
-      } else {
+    try {
+      const res = await api.post('/auth/login', { email, password })
+      const { token, usuario } = res.data.data
+      localStorage.setItem('token', token)
+      localStorage.setItem('user', JSON.stringify(usuario))
+      navigate('/home')
+    } catch (err) {
+      if (err.response?.status === 401 || err.response?.status === 400) {
         setError('Correo o contraseña incorrectos.')
+      } else {
+        setError('Error al iniciar sesión, intenta de nuevo.')
       }
-    }, 900)
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -121,7 +127,7 @@ export default function Login() {
 
           {/* Submit */}
           <button type="submit" disabled={loading} className="btn-primary mt-2">
-            {loading ? 'Ingresando...' : 'Ingresar'}
+            {loading ? 'Iniciando sesión...' : 'Ingresar'}
           </button>
         </form>
 

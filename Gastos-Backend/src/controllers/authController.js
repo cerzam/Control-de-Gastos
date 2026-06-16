@@ -9,13 +9,18 @@ const generarIniciales = (nombre) => {
 };
 
 const generarToken = (userId) =>
-  jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN || '24h' });
+  jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '24h' });
 
 const register = async (req, res) => {
   const { nombre, email, password } = req.body;
 
   if (!nombre || !email || !password) {
     return res.status(400).json({ success: false, message: 'Nombre, email y contraseña son requeridos' });
+  }
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return res.status(400).json({ success: false, message: 'El formato del email no es válido' });
   }
 
   if (password.length < 6) {

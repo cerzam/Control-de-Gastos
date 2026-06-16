@@ -10,7 +10,6 @@ export default function Ajustes() {
   const handleCerrarSesion = () => {
     localStorage.removeItem('token')
     localStorage.removeItem('user')
-    // Rompe sesión local y manda a login
     navigate('/login')
   }
 
