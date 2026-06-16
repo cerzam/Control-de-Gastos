@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { Mail, Lock, User, ArrowRight } from 'lucide-react'
+import api from '../api/axios'
 
 export default function Register() {
   const navigate = useNavigate()
@@ -9,8 +10,9 @@ export default function Register() {
   const [password, setPassword] = useState('')
   const [acceptTerms, setAcceptTerms] = useState(false)
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault()
     setError('')
     if (!nombre || !email || !password) {
@@ -22,8 +24,22 @@ export default function Register() {
       return
     }
 
-    // Simulación de creación de cuenta exitosa (Issue 7)
-    navigate('/home')
+    setLoading(true)
+    try {
+      const res = await api.post('/auth/register', { nombre, email, password })
+      const { token, usuario } = res.data.data
+      localStorage.setItem('token', token)
+      localStorage.setItem('user', JSON.stringify(usuario))
+      navigate('/home')
+    } catch (err) {
+      if (err.response?.status === 409) {
+        setError('Este correo ya está registrado.')
+      } else {
+        setError('Error al registrar, intenta de nuevo.')
+      }
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -98,8 +114,12 @@ export default function Register() {
             </label>
           </div>
 
-          <button type="submit" className="btn-primary mt-4 flex items-center justify-center gap-2">
-            Registrarse <ArrowRight size={16} />
+          <button
+            type="submit"
+            disabled={loading}
+            className="btn-primary mt-4 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            {loading ? 'Registrando...' : <><span>Registrarse</span><ArrowRight size={16} /></>}
           </button>
         </form>
       </div>
