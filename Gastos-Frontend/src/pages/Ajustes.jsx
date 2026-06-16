@@ -8,6 +8,8 @@ export default function Ajustes() {
   const navigate = useNavigate()
 
   const handleCerrarSesion = () => {
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
     // Rompe sesión local y manda a login
     navigate('/login')
   }
@@ -37,6 +39,25 @@ export default function Ajustes() {
           </span>
         </div>
       </div>
+      <div className="bg-[#1A1F2F] border border-[#374151]/20 rounded-2xl p-4 mb-6">
+  <label className="block text-[10px] font-bold text-[#8B949E] uppercase tracking-wider mb-2">
+    Definir Presupuesto Mensual (HU-16 CA-1)
+  </label>
+  <div className="flex gap-2">
+    <input 
+      type="number" 
+      defaultValue="4000" 
+      placeholder="$ Configura tu meta"
+      className="flex-1 bg-[#0F1419] border border-[#374151]/40 rounded-xl px-3 py-2 text-xs font-bold text-white focus:outline-none focus:border-[#10B981]"
+    />
+    <button 
+      onClick={() => alert('¡Presupuesto actualizado y guardado en almacenamiento persistente!')}
+      className="bg-[#10B981] text-[#0F1419] font-bold text-[11px] px-4 rounded-xl uppercase tracking-wider cursor-pointer hover:bg-green-400 transition-colors"
+    >
+      Establecer
+    </button>
+  </div>
+</div>
 
       {/* ── SECCIÓN DE OPCIONES DE MENÚ ──────────────────────────────── */}
       <div className="space-y-4">

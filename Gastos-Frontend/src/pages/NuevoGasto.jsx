@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import React, { useState, useEffect } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { ChevronLeft, Camera, Utensils, Car, Home as HomeIcon, Zap, Gamepad2, Heart, BookOpen, ShoppingCart } from 'lucide-react'
 import BottomNav from '../components/BottomNav'
 
@@ -16,28 +16,65 @@ const CATEGORIAS_FORM = [
 
 export default function NuevoGasto() {
   const navigate = useNavigate()
+  const location = useLocation()
+  
+  // Detectamos si la navegación nos envió un gasto específico para editar (HU-11 CA-1)
+  const gastoParaEditar = location.state?.editandoGasto || null
+  const esModoEdicion = !!gastoParaEditar
+
+  // Estados base inicializados condicionalmente si es Edición (HU-11 CA-1 y CA-2)
   const [monto, setMonto] = useState('0.00')
   const [descripcion, setDescripcion] = useState('')
   const [fecha, setFecha] = useState('2026-06-15')
   const [categoria, setCategoria] = useState('transporte')
-  const [metodoPago, setMetodoPago] = useState('Debito')
+  const [metodoPago, setMetodoPago] = useState('Débito')
   const [nota, setNota] = useState('')
   const [recurrente, setRecurrente] = useState(false)
 
+  // Efecto para pre-llenar los datos si existe un objeto de edición activo
+  useEffect(() => {
+    if (esModoEdicion && gastoParaEditar) {
+      setMonto(gastoParaEditar.monto.toString())
+      setDescripcion(gastoParaEditar.nombre)
+      setFecha(gastoParaEditar.fecha)
+      setCategoria(gastoParaEditar.categoria)
+      setNota(gastoParaEditar.nota || '')
+    }
+  }, [esModoEdicion, gastoParaEditar])
+
+  const handleGuardar = () => {
+    if (esModoEdicion) {
+      alert(`¡Gasto actualizado localmente con éxito!\nNuevo monto: $${monto}\nNueva descripción: ${descripcion}`)
+    } else {
+      alert('¡Gasto creado localmente con éxito!')
+    }
+    // Regresamos a la lista de transacciones actualizadas
+    navigate('/gastos')
+  }
+
   return (
     <div className="h-full bg-[#0F1419] text-[#F5F7FB] pb-32 pt-4 px-4 overflow-y-auto select-none">
+      
+      {/* Cabecera dinámica que cambia de título según el contexto */}
       <div className="flex items-center justify-between mb-4">
-        <button onClick={() => navigate('/home')} className="p-1"><ChevronLeft size={22} /></button>
-        <h1 className="text-md font-bold">Nuevo Gasto</h1>
+        <button onClick={() => navigate('/gastos')} className="p-1"><ChevronLeft size={22} /></button>
+        <h1 className="text-md font-bold">{esModoEdicion ? 'Editar Gasto' : 'Nuevo Gasto'}</h1>
         <button className="p-1"><Camera size={20} /></button>
       </div>
 
       {/* Monto Hero Display */}
       <div className="w-full bg-gradient-to-br from-[#10B981] to-[#059669] rounded-2xl p-5 text-center mb-5">
-        <span className="text-[9px] font-bold uppercase tracking-wider text-[#0F1419]/60 block mb-1">Monto del Gasto</span>
+        <span className="text-[9px] font-bold uppercase tracking-wider text-[#0F1419]/60 block mb-1">
+          {esModoEdicion ? 'Modificar Monto del Gasto' : 'Monto del Gasto'}
+        </span>
         <div className="flex items-center justify-center gap-2">
           <span className="text-2xl font-light text-[#0F1419]/60">$</span>
-          <input type="text" value={monto} onChange={e => setMonto(e.target.value)} className="bg-transparent text-white text-4xl font-bold text-center focus:outline-none w-44" />
+          <input 
+            type="text" 
+            value={monto} 
+            onChange={e => setMonto(e.target.value)} 
+            className="bg-transparent text-white text-4xl font-bold text-center focus:outline-none w-44" 
+          />
         </div>
       </div>
 
@@ -103,7 +140,10 @@ export default function NuevoGasto() {
           </button>
         </div>
 
-        <button onClick={() => navigate('/home')} className="btn-primary !mt-6">Guardar gasto</button>
+        {/* Botón de envío que cambia de texto de acuerdo al contexto */}
+        <button onClick={handleGuardar} className="btn-primary !mt-6">
+          {esModoEdicion ? 'Confirmar Cambios' : 'Guardar gasto'}
+        </button>
       </div>
       <BottomNav />
     </div>
