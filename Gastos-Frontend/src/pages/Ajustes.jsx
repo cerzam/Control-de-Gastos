@@ -8,7 +8,8 @@ export default function Ajustes() {
   const navigate = useNavigate()
 
   const handleCerrarSesion = () => {
-    // Rompe sesión local y manda a login
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
     navigate('/login')
   }
 
