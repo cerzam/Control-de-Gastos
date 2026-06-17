@@ -58,14 +58,13 @@ const getDashboard = async (req, res) => {
       success: true,
       data: {
         mes,
-        total_mes: totalMes,
+        total_mes:      totalMes,
         cantidad_gastos: cantidadGastos,
-        presupuesto_limite: presupuesto,
-        presupuesto_disponible: presupuesto !== null ? presupuesto - totalMes : null,
-        porcentaje_usado: presupuesto ? Math.round((totalMes / presupuesto) * 100) : null,
-        por_categoria: porCategoriaResult.rows,
-        gastos_recientes: recientesResult.rows,
-        tendencia_mensual: tendenciaResult.rows,
+        limite_total:   presupuesto ?? 0,
+        porcentaje:     presupuesto ? Math.round((totalMes / presupuesto) * 100) : 0,
+        ultimos_gastos: recientesResult.rows,
+        por_categoria:  porCategoriaResult.rows,
+        tendencia:      tendenciaResult.rows,
       },
     });
   } catch (err) {
