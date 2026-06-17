@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { ChevronLeft, Camera, Utensils, Car, Home as HomeIcon, Zap, Gamepad2, Heart, BookOpen, ShoppingCart } from 'lucide-react'
 import BottomNav from '../components/BottomNav'
+import api from '../api/axios.js'
 
 const CATEGORIAS_FORM = [
   { id: 'alimentacion', label: 'Alimentación', icon: Utensils, borderActive: 'border-[#10B981] text-[#10B981] ring-1 ring-[#10B981]/30' },
@@ -30,6 +31,8 @@ export default function NuevoGasto() {
   const [metodoPago, setMetodoPago] = useState('Débito')
   const [nota, setNota] = useState('')
   const [recurrente, setRecurrente] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
 
   // Efecto para pre-llenar los datos si existe un objeto de edición activo
   useEffect(() => {
@@ -42,14 +45,38 @@ export default function NuevoGasto() {
     }
   }, [esModoEdicion, gastoParaEditar])
 
-  const handleGuardar = () => {
+  const handleGuardar = async () => {
     if (esModoEdicion) {
+      // HU-11: edición contra el backend — pendiente de implementar
       alert(`¡Gasto actualizado localmente con éxito!\nNuevo monto: $${monto}\nNueva descripción: ${descripcion}`)
-    } else {
-      alert('¡Gasto creado localmente con éxito!')
+      navigate('/gastos')
+      return
     }
-    // Regresamos a la lista de transacciones actualizadas
-    navigate('/gastos')
+
+    if (!descripcion || !monto || !fecha) {
+      setError('Nombre, monto y fecha son requeridos')
+      return
+    }
+
+    setError('')
+    setLoading(true)
+    try {
+      await api.post('/gastos', {
+        nombre:      descripcion,
+        monto:       parseFloat(monto),
+        fecha,
+        categoria_id: null,
+        hora:        null,
+        metodo_pago: metodoPago,
+        nota:        nota || null,
+        recurrente,
+      })
+      navigate('/gastos')
+    } catch (err) {
+      setError(err.response?.data?.message || 'Error al guardar el gasto. Intenta nuevamente.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -140,9 +167,13 @@ export default function NuevoGasto() {
           </button>
         </div>
 
+        {error && (
+          <p className="text-xs text-[#EF4444] text-center -mt-2">{error}</p>
+        )}
+
         {/* Botón de envío que cambia de texto de acuerdo al contexto */}
-        <button onClick={handleGuardar} className="btn-primary !mt-6">
-          {esModoEdicion ? 'Confirmar Cambios' : 'Guardar gasto'}
+        <button onClick={handleGuardar} disabled={loading} className="btn-primary !mt-6 disabled:opacity-60 disabled:cursor-not-allowed">
+          {loading ? 'Guardando...' : (esModoEdicion ? 'Confirmar Cambios' : 'Guardar gasto')}
         </button>
       </div>
       <BottomNav />
