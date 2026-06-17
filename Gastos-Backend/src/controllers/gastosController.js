@@ -48,11 +48,21 @@ const createGasto = async (req, res) => {
       }
     }
 
-    const result = await pool.query(
+    const inserted = await pool.query(
       `INSERT INTO gastos (user_id, nombre, categoria_id, monto, fecha, hora, metodo_pago, nota, recurrente)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-       RETURNING *`,
+       RETURNING id`,
       [req.user.id, nombre, categoria_id || null, monto, fecha, hora || null, metodo_pago || null, nota || null, recurrente || false]
+    );
+
+    // FIX: devolver el gasto con JOIN a categorias
+    const result = await pool.query(
+      `SELECT g.id, g.nombre, g.monto, g.fecha, g.hora, g.metodo_pago, g.nota, g.recurrente, g.created_at,
+              c.id AS categoria_id, c.nombre AS categoria_nombre, c.color AS categoria_color, c.icono AS categoria_icono
+       FROM gastos g
+       LEFT JOIN categorias c ON g.categoria_id = c.id
+       WHERE g.id = $1`,
+      [inserted.rows[0].id]
     );
 
     return res.status(201).json({ success: true, data: result.rows[0] });
@@ -69,7 +79,8 @@ const updateGasto = async (req, res) => {
   try {
     const existe = await pool.query('SELECT id FROM gastos WHERE id = $1 AND user_id = $2', [id, req.user.id]);
     if (existe.rows.length === 0) {
-      return res.status(404).json({ success: false, message: 'Gasto no encontrado' });
+      // FIX: 403 en lugar de 404 (oculta si el recurso existe pero es de otro usuario)
+      return res.status(403).json({ success: false, message: 'No tienes permiso para modificar este gasto' });
     }
 
     if (categoria_id) {
@@ -79,19 +90,41 @@ const updateGasto = async (req, res) => {
       }
     }
 
-    const result = await pool.query(
+    // FIX: todos los campos opcionales usan COALESCE para no pisar valores existentes
+    const updated = await pool.query(
       `UPDATE gastos
-       SET nombre = COALESCE($1, nombre),
-           categoria_id = $2,
-           monto = COALESCE($3, monto),
-           fecha = COALESCE($4, fecha),
-           hora = $5,
-           metodo_pago = $6,
-           nota = $7,
-           recurrente = COALESCE($8, recurrente)
+       SET nombre      = COALESCE($1, nombre),
+           categoria_id = COALESCE($2, categoria_id),
+           monto       = COALESCE($3, monto),
+           fecha       = COALESCE($4, fecha),
+           hora        = COALESCE($5, hora),
+           metodo_pago = COALESCE($6, metodo_pago),
+           nota        = COALESCE($7, nota),
+           recurrente  = COALESCE($8, recurrente)
        WHERE id = $9 AND user_id = $10
-       RETURNING *`,
-      [nombre, categoria_id || null, monto, fecha, hora || null, metodo_pago || null, nota || null, recurrente, id, req.user.id]
+       RETURNING id`,
+      [
+        nombre        || null,
+        categoria_id  || null,
+        monto         || null,
+        fecha         || null,
+        hora          || null,
+        metodo_pago   || null,
+        nota          || null,
+        recurrente    ?? null,   // ?? para no perder el valor false
+        id,
+        req.user.id
+      ]
+    );
+
+    // FIX: devolver el gasto actualizado con JOIN a categorias
+    const result = await pool.query(
+      `SELECT g.id, g.nombre, g.monto, g.fecha, g.hora, g.metodo_pago, g.nota, g.recurrente, g.created_at,
+              c.id AS categoria_id, c.nombre AS categoria_nombre, c.color AS categoria_color, c.icono AS categoria_icono
+       FROM gastos g
+       LEFT JOIN categorias c ON g.categoria_id = c.id
+       WHERE g.id = $1`,
+      [updated.rows[0].id]
     );
 
     return res.json({ success: true, data: result.rows[0] });
@@ -108,10 +141,12 @@ const deleteGasto = async (req, res) => {
     const result = await pool.query('DELETE FROM gastos WHERE id = $1 AND user_id = $2 RETURNING id', [id, req.user.id]);
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ success: false, message: 'Gasto no encontrado' });
+      // FIX: 403 en lugar de 404
+      return res.status(403).json({ success: false, message: 'No tienes permiso para eliminar este gasto' });
     }
 
-    return res.json({ success: true, data: { id: result.rows[0].id } });
+    // FIX: devolver mensaje de confirmación
+    return res.json({ success: true, message: 'Gasto eliminado correctamente' });
   } catch (err) {
     console.error('Error en deleteGasto:', err.message);
     return res.status(500).json({ success: false, message: 'Error interno del servidor' });
