@@ -45,16 +45,28 @@ const deleteCategoria = async (req, res) => {
   const { id } = req.params;
 
   try {
-    const result = await pool.query(
-      'DELETE FROM categorias WHERE id = $1 AND user_id = $2 RETURNING id',
+    // FIX: verificar ownership → 403 (no revelar si existe o no)
+    const existe = await pool.query(
+      'SELECT id FROM categorias WHERE id = $1 AND user_id = $2',
       [id, req.user.id]
     );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ success: false, message: 'Categoría no encontrada' });
+    if (existe.rows.length === 0) {
+      return res.status(403).json({ success: false, message: 'No tienes permiso para eliminar esta categoría' });
     }
 
-    return res.json({ success: true, data: { id: result.rows[0].id } });
+    // FIX: bloquear si hay gastos asociados
+    const gastosAsociados = await pool.query(
+      'SELECT id FROM gastos WHERE categoria_id = $1 LIMIT 1',
+      [id]
+    );
+    if (gastosAsociados.rows.length > 0) {
+      return res.status(409).json({ success: false, message: 'No puedes eliminar una categoría que tiene gastos asociados' });
+    }
+
+    await pool.query('DELETE FROM categorias WHERE id = $1', [id]);
+
+    // FIX: devolver mensaje de confirmación
+    return res.json({ success: true, message: 'Categoría eliminada correctamente' });
   } catch (err) {
     console.error('Error en deleteCategoria:', err.message);
     return res.status(500).json({ success: false, message: 'Error interno del servidor' });

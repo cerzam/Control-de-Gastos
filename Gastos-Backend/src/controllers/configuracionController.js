@@ -84,7 +84,7 @@ const getPresupuesto = async (req, res) => {
 
     return res.json({
       success: true,
-      data: result.rows[0] || { mes, limite_total: null },
+      data: result.rows[0] || { mes, limite_total: 0 },
     });
   } catch (err) {
     console.error('Error en getPresupuesto:', err.message);
