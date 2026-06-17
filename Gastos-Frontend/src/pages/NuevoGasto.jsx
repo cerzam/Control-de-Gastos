@@ -20,8 +20,8 @@ export default function NuevoGasto() {
   const location = useLocation()
   
   // Detectamos si la navegación nos envió un gasto específico para editar (HU-11 CA-1)
-  const gastoParaEditar = location.state?.editandoGasto || null
-  const esModoEdicion = !!gastoParaEditar
+  const gastoParaEditar = location.state?.gasto || null
+  const esModoEdicion = location.state?.modo === 'editar'
 
   // Estados base inicializados condicionalmente si es Edición (HU-11 CA-1 y CA-2)
   const [monto, setMonto] = useState('0.00')
@@ -37,22 +37,26 @@ export default function NuevoGasto() {
   // Efecto para pre-llenar los datos si existe un objeto de edición activo
   useEffect(() => {
     if (esModoEdicion && gastoParaEditar) {
-      setMonto(gastoParaEditar.monto.toString())
+      setMonto(String(gastoParaEditar.monto))
       setDescripcion(gastoParaEditar.nombre)
-      setFecha(gastoParaEditar.fecha)
-      setCategoria(gastoParaEditar.categoria)
+      setFecha((gastoParaEditar.fecha || '').substring(0, 10))
+      setMetodoPago(gastoParaEditar.metodo_pago || 'Débito')
       setNota(gastoParaEditar.nota || '')
+      setRecurrente(gastoParaEditar.recurrente ?? false)
+
+      // Intentar seleccionar visualmente la categoría más cercana al nombre del backend
+      if (gastoParaEditar.categoria_nombre) {
+        const slug = gastoParaEditar.categoria_nombre
+          .toLowerCase()
+          .normalize('NFD').replace(/[̀-ͯ]/g, '')
+          .replace('entretenimiento', 'entrete')
+        const match = CATEGORIAS_FORM.find(c => slug.startsWith(c.id) || c.id.startsWith(slug))
+        if (match) setCategoria(match.id)
+      }
     }
   }, [esModoEdicion, gastoParaEditar])
 
   const handleGuardar = async () => {
-    if (esModoEdicion) {
-      // HU-11: edición contra el backend — pendiente de implementar
-      alert(`¡Gasto actualizado localmente con éxito!\nNuevo monto: $${monto}\nNueva descripción: ${descripcion}`)
-      navigate('/gastos')
-      return
-    }
-
     if (!descripcion || !monto || !fecha) {
       setError('Nombre, monto y fecha son requeridos')
       return
@@ -61,16 +65,28 @@ export default function NuevoGasto() {
     setError('')
     setLoading(true)
     try {
-      await api.post('/gastos', {
-        nombre:      descripcion,
-        monto:       parseFloat(monto),
-        fecha,
-        categoria_id: null,
-        hora:        null,
-        metodo_pago: metodoPago,
-        nota:        nota || null,
-        recurrente,
-      })
+      if (esModoEdicion) {
+        await api.put(`/gastos/${gastoParaEditar.id}`, {
+          nombre:      descripcion,
+          monto:       parseFloat(monto),
+          fecha,
+          hora:        null,
+          metodo_pago: metodoPago,
+          nota:        nota || null,
+          recurrente,
+        })
+      } else {
+        await api.post('/gastos', {
+          nombre:       descripcion,
+          monto:        parseFloat(monto),
+          fecha,
+          categoria_id: null,
+          hora:         null,
+          metodo_pago:  metodoPago,
+          nota:         nota || null,
+          recurrente,
+        })
+      }
       navigate('/gastos')
     } catch (err) {
       setError(err.response?.data?.message || 'Error al guardar el gasto. Intenta nuevamente.')

@@ -83,7 +83,7 @@ export default function Gastos() {
   }
 
   const handleEditarGasto = (gasto) => {
-    navigate('/nuevo', { state: { editandoGasto: gasto } })
+    navigate('/nuevo', { state: { gasto, modo: 'editar' } })
   }
 
   const gastosFiltrados = listaGastosActiva.filter(gasto => {
